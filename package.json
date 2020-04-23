@@ -1,14 +1,26 @@
 {
-  "name": "parser-vue",
+  "name": "vue-boilerplate-unit-test",
   "version": "1.0.0",
-  "description": "",
+  "description": "Boilerplate unit test generator for vue-test-utils",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack --progress --display-error-details --display-entrypoints --display-reasons"
+  },
+  "bin": {
+    "vue-boilerplate-unit-test": "index.js"
   },
   "author": "Alexey Belousov",
   "license": "ISC",
   "dependencies": {
     "@vuedoc/parser": "^2.0.0-beta.5"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexeybelousov/vue-boilerplate-unit-test.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alexeybelousov/vue-boilerplate-unit-test/issues"
+  },
+  "homepage": "https://github.com/alexeybelousov/vue-boilerplate-unit-test#readme"
 }

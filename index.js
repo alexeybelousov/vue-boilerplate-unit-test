@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const vuedoc = require('@vuedoc/parser');
 const createUnitTestFile = require('./createUnitTestFile');
 

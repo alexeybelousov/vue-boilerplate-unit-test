@@ -1,0 +1,111 @@
+{
+  "inheritAttrs": true,
+  "name": "BaseTemplatePlaSpec",
+  "description": null,
+  "keywords": [],
+  "slots": [],
+  "props": [
+    {
+      "kind": "prop",
+      "visibility": "public",
+      "description": null,
+      "keywords": [],
+      "name": "template",
+      "type": "Object",
+      "nativeType": "object",
+      "default": "__undefined__",
+      "required": true,
+      "describeModel": false
+    },
+    {
+      "kind": "prop",
+      "visibility": "public",
+      "description": null,
+      "keywords": [],
+      "name": "based-template",
+      "type": "Object",
+      "nativeType": "null",
+      "default": null,
+      "required": false,
+      "describeModel": false
+    },
+    {
+      "kind": "prop",
+      "visibility": "public",
+      "description": null,
+      "keywords": [],
+      "name": "id-prefix",
+      "type": "String",
+      "nativeType": "string",
+      "default": "",
+      "required": false,
+      "describeModel": false
+    },
+    {
+      "kind": "prop",
+      "visibility": "public",
+      "description": null,
+      "keywords": [],
+      "name": "readonly",
+      "type": "Boolean",
+      "nativeType": "boolean",
+      "default": "__undefined__",
+      "required": false,
+      "describeModel": false
+    }
+  ],
+  "data": [],
+  "computed": [],
+  "events": [
+    {
+      "kind": "event",
+      "visibility": "public",
+      "description": "",
+      "keywords": [],
+      "name": "update-pla-spec",
+      "arguments": []
+    },
+    {
+      "kind": "event",
+      "visibility": "public",
+      "description": "",
+      "keywords": [],
+      "name": "update-template-props",
+      "arguments": []
+    },
+    {
+      "kind": "event",
+      "visibility": "public",
+      "description": "<PscDivider\nv-if=\"!template.plaSpecification.code\"\nmargin=\"0 24px\"\n/>",
+      "keywords": [],
+      "name": "open-settings-drawer",
+      "arguments": []
+    }
+  ],
+  "methods": [
+    {
+      "kind": "method",
+      "visibility": "public",
+      "description": null,
+      "keywords": [],
+      "name": "setValidationRules",
+      "params": [],
+      "return": {
+        "type": "void",
+        "description": null
+      }
+    },
+    {
+      "kind": "method",
+      "visibility": "public",
+      "description": null,
+      "keywords": [],
+      "name": "validate",
+      "params": [],
+      "return": {
+        "type": "void",
+        "description": null
+      }
+    }
+  ]
+}
