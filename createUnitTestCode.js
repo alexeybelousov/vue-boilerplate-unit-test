@@ -179,7 +179,7 @@ const getMethodsTestCode = (componentInJson) => {
         `\t\t\twrapper.vm.someMethod = someMethodSpy;\n\n` +
         `\t\t\twrapper.vm.${name}();\n\n` +
         `\t\t\texpect(wrapper.vm.someMethod).toHaveBeenCalled();\n` +
-        `\t\t\texpect(wrapper.emitted('event')).toEqual(someParams)\n` +
+        `\t\t\texpect(wrapper.emitted('event')[0]).toEqual([someParams])\n` +
         `\t\t\texpect(wrapper.vm.someValue).toMatchObject();\n` +
         `\t\t\texpect(wrapper.vm.someValue).toBe();\n` +
       `\t\t});\n\n`;
