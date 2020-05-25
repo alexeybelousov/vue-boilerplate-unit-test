@@ -1,11 +1,21 @@
-const { toCamel, getDefaultValue, definePackages, findDependencies } = require('./helpers');
+const { toCamel, getDefaultValue, defineGlobalPackages, findDependencies } = require('./helpers');
 
-const getImportCode = (componentName, packages) => {
-  const importPlugins = packages && packages.length ? ', PLUGINS' : '';
-
+const getImportCode = (componentName) => {
   return `import Vue from 'vue';\n` +
-          `import { mountWithPlugins${importPlugins} } from '@@/utils';\n` +
-          `import ${componentName} from '../components/${componentName}';\n\n`;
+          `import createWrapper from '@@/utils';\n\n` +
+          `// Target module\n` +
+          `import ${componentName} from '../components/${componentName}.vue';\n\n`;
+}
+
+const getConstantsCode = (globalPackages) => {
+  let str = `let wrapper;\n` +
+            `let mountingOptions;\n`;
+
+  if (globalPackages.includes('store')) {
+    str += `let storeOptions;\n`;
+  }
+
+  return str += '\n';
 }
 
 const getPropsCode = (props, tab, convertToCamel = true) => {
@@ -28,49 +38,64 @@ const getDataCode = (data, tab, convertToCamel = true) => {
     : '\n';
 };
 
-const getMountOptionsCode = ({ props, data }) => {
-  let str = `const mountOptions = {\n` +
-              `\tpropsData: {\n` +
-              `${getPropsCode(props, '\t\t')}` +
-              `\t},\n`;
+const getMountingOptionsCode = ({ props, data }, componentInString) => {
+  let str = `\tmountingOptions = {\n` +
+              `\t\tpropsData: {\n` +
+              `${getPropsCode(props, '\t\t\t')}` +
+              `\t\t},\n`;
 
   if (data && data.length) {
-    str += `\tdata() {\n` +
-            `\t\treturn {\n` +
-            `${getDataCode(data, '\t\t\t', false)}` +
-            `\t\t};\n` +
-            `\t},\n`;
+    str += `\t\tdata() {\n` +
+            `\t\t\treturn {\n` +
+            `${getDataCode(data, '\t\t\t\t', false)}` +
+            `\t\t\t};\n` +
+            `\t\t},\n`;
   }
 
-  str += `\tcomputed: {\n` +
-          `\t\t/* in case of use mapState or mapGetters */\n` +
-          `\t\t// someValueFromVuex: () => [{ code: 'price_type' }],\n` +
-          `\t},\n` +
-          `\tmethods: {\n` +
-          `\t\t/* in case of use mapActions or mapMutations */\n` +
-          `\t\t// someActionFromVuex: jest.fn(),\n` +
-          `\t},\n` +
-          `\tsync: false,\n` +
-        `};\n\n` +
-        `/* in case of use some api method */\n` +
-        `// someApi.someMethods = jest.fn(() => {\n` +
-        `//   return new Promise((resolve) => {\n` +
-        `//     resolve({});\n` +
-        `//   });\n` +
-        `// });\n`;
+  if (componentInString.search('mixins') !== -1) {
+    str += `\t\tmixins: [],\n`;
+  }
+
+  str +=`\t};\n\n` +
+        `\t/* in case of use some api method */\n` +
+        `\t// someApi.someMethods = jest.fn(() => {\n` +
+        `\t//   return new Promise((resolve) => {\n` +
+        `\t//     resolve({});\n` +
+        `\t//   });\n` +
+        `\t// });\n\n`;
 
   return str;
 };
 
-const getPackagesCode = (packages) => {
-  if (packages && packages.length) {
-    let str = `\t\tplugins: [\n`;
+const getStoreCode = (globalPackages) => {
+  if (globalPackages.includes('store')) {
+    return `\tstoreOptions = {\n` +
+            `\t\tmodules: {\n` +
+            `\t\t\tmoduleName: {\n` +
+            `\t\t\t\tnamespaced: true,\n` +
+            `\t\t\t\tstate: {},\n` +
+            `\t\t\t},\n` +
+            `\t\t},\n` +
+            `\t};\n\n`;
+  }
 
-    str += packages.reduce((code, package) => {
-      return code += `\t\t\tPLUGINS.${package},\n`
+  return '';
+};
+
+const getGlobalPackagesCode = (globalPackages) => {
+  if (globalPackages && globalPackages.length) {
+    let str = '';
+    if (globalPackages.includes('store')) {
+      str += `\t\t\tstoreOptions,\n`;
+    }
+
+    str += globalPackages.reduce((code, package) => {
+      if (package !== 'store') {
+        return code += `\t\t\t${package}: true,\n`;
+      }
+
+      return code;
     }, '')
-
-    str += `\t\t],\n`;
 
     return str;
   }
@@ -78,14 +103,17 @@ const getPackagesCode = (packages) => {
   return '';
 };
 
-const getMountPluginsCode = (componentName, packages) => {
-  return `let wrapper;\n\n` +
-  `beforeEach(() => {\n` +
-    `\twrapper = mountWithPlugins({\n` +
-      `\t\tcomponentToMount: ${componentName},\n` +
-      `\t\toptions: mountOptions,\n` +
-      `${getPackagesCode(packages)}` +
-    `\t});\n` +
+const getMountPluginsCode = (componentName, globalPackages, componentInJson, componentInString) => {
+  return `beforeEach(() => {\n` +
+    `${getMountingOptionsCode(componentInJson, componentInString)}` +
+    `${getStoreCode(globalPackages)}` +
+    `\twrapper = createWrapper(\n` +
+      `\t\t${componentName},\n` +
+      `\t\t{\n` +
+      `\t\t\tmountingOptions,\n` +
+      `${getGlobalPackagesCode(globalPackages)}` +
+      `\t\t}\n` +
+    `\t);\n` +
   `});\n\n` +
   `afterEach(() => {\n` +
     `\twrapper.destroy();\n` +
@@ -143,21 +171,15 @@ const getMethodsTestCode = (componentInJson) => {
 
   if (!methods || !methods.length) return '';
 
-  let str = `\tdescribe('methods', () => {\n` +
-    `\t\tbeforeEach(() => {\n` +
-      `\t\t\twrapper.setMethods({\n` +
-        `\t\t\t\t$emit: jest.fn(),\n` +
-      `\t\t\t});\n` +
-    `\t\t});\n\n`;
+  let str = `\tdescribe('methods', () => {\n`;
 
   str += methods.reduce((code, { name }) => {
-    return code += `\t\tit('${name}: should call emit() with ... or return ...', () => {\n` +
-        `\t\t\twrapper.setMethods({\n` +
-        `\t\t\t\tsomeMethod: jest.fn(),\n` +
-        `\t\t\t});\n\n` +
-        `\t\t\twrapper.vm.${name}();\n` +
-        `\t\t\texpect(wrapper.vm.$emit).toHaveBeenCalledWith('some-event', someParams)\n` +
+    return code += `\t\tit('${name}: should call $emit() with ... or return ...', () => {\n` +
+        `\t\t\tconst someMethodSpy = jest.fn().mockImplementation(() => {});\n` +
+        `\t\t\twrapper.vm.someMethod = someMethodSpy;\n\n` +
+        `\t\t\twrapper.vm.${name}();\n\n` +
         `\t\t\texpect(wrapper.vm.someMethod).toHaveBeenCalled();\n` +
+        `\t\t\texpect(wrapper.emitted('event')).toEqual(someParams)\n` +
         `\t\t\texpect(wrapper.vm.someValue).toMatchObject();\n` +
         `\t\t\texpect(wrapper.vm.someValue).toBe();\n` +
       `\t\t});\n\n`;
@@ -166,15 +188,16 @@ const getMethodsTestCode = (componentInJson) => {
   if (methods.filter((method) => method.name.search('validate') !== -1).length) {
     str += `\t\t// This test was added because the validate method was found\n` +
       `\t\tit('validate: should return resolve / reject promise and set ...', async () => {\n` +
-        `\t\t\twrapper.setMethods({\n` +
-          `\t\t\t\t$refs: {\n` +
-            `\t\t\t\t\tsomeRefName: {\n` +
-              `\t\t\t\t\t\tvalidate: jest.fn(() => {\n` +
-                `\t\t\t\t\t\t\treturn Promise.reject();\n` +
-              `\t\t\t\t\t\t}),\n` +
-            `\t\t\t\t\t},\n` +
-          `\t\t\t\t},\n` +
-        `\t\t\t});\n\n` +
+
+          `\t\t\twrapper.vm.$refs = {\n` +
+            `\t\t\t\tsomeRefName: {\n` +
+              `\t\t\t\t\tvalidate: jest.fn(() => {\n` +
+                `\t\t\t\t\t\// eslint-disable-next-line prefer-promise-reject-errors\n` +
+                `\t\t\t\t\t\treturn Promise.reject();\n` +
+              `\t\t\t\t\t}),\n` +
+            `\t\t\t\t},\n` +
+          `\t\t\t};\n\n` +
+
         `\t\t\ttry {\n` +
           `\t\t\t\tawait wrapper.vm.validate();\n` +
         `\t\t\t} catch (e) {\n` +
@@ -216,11 +239,11 @@ const getDefaultTestCode = (componentInJson, componentName) => {
 module.exports = (componentInJson, componentInString) => {
   return new Promise((resolve, reject) => {
     const testFileName = componentInJson.name;
-    const packages = definePackages(componentInString);
+    const globalPackages = defineGlobalPackages(componentInString);
 
-    const code = getImportCode(testFileName, packages) 
-      + getMountOptionsCode(componentInJson)
-      + getMountPluginsCode(testFileName, packages)
+    const code = getImportCode(testFileName)
+      + getConstantsCode(globalPackages)
+      + getMountPluginsCode(testFileName, globalPackages, componentInJson, componentInString)
       + getDefaultTestCode(componentInJson, testFileName);
 
     resolve(code);

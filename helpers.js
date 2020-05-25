@@ -65,14 +65,23 @@ const getDefaultValue = (value, type) => {
   return getValueByType(value, type);
 };
 
-const definePackages = (componentInString) => {
-  const packages = [];
+const defineGlobalPackages = (componentInString) => {
+  const globalPackages = [];
 
+  if (componentInString.indexOf('vuex') !== -1) {
+    globalPackages.push('store');
+  }
+  if (componentInString.indexOf('Psc') !== -1) {
+    globalPackages.push('importCommonPscComponents');
+  }
   if (componentInString.indexOf('$t(') !== -1) {
-    packages.push('I18N');
+    globalPackages.push('i18n');
+  }
+  if (componentInString.indexOf('$accessControl') !== -1) {
+    globalPackages.push('accessControl');
   }
 
-  return packages;
+  return globalPackages;
 };
 
 const findDependencies = (dependencies, target) => {
@@ -92,4 +101,4 @@ const findDependencies = (dependencies, target) => {
    }, []);
 };
 
-module.exports = { toCamel, getDefaultValue, definePackages, findDependencies };
+module.exports = { toCamel, getDefaultValue, defineGlobalPackages, findDependencies };
